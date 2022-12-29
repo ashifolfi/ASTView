@@ -1,10 +1,14 @@
--- RenderDrawLists is based on love-imgui (https://github.com/slages/love-imgui)
+-- RenderDrawLists is based on love-imgui (https://github.com/slages/love-imgui) Copyright (c) 2016 slages, licensed under the MIT license
 
 local path = (...):gsub("[^%.]*$", "")
 local M = require(path .. "master")
 local ffi = require("ffi")
+local bit = require("bit")
+local love = require("love")
 
 local C = M.C
+local L = M.love
+local _common = M._common
 
 local vertexformat = {
     {"VertexPosition", "float", 2},
@@ -13,115 +17,261 @@ local vertexformat = {
 }
 
 local lovekeymap = {
-    ["tab"] = 1,
-    ["left"] = 2,
-    ["right"] = 3,
-    ["up"] = 4,
-    ["down"] = 5,
-    ["pageup"] = 6,
-    ["pagedown"] = 7,
-    ["home"] = 8,
-    ["end"] = 9,
-    ["insert"] = 10,
-    ["delete"] = 11,
-    ["backspace"] = 12,
-    ["space"] = 13,
-    ["return"] = 14,
-    ["escape"] = 15,
-    ["kpenter"] = 16,
-    ["a"] = 17,
-    ["c"] = 18,
-    ["v"] = 19,
-    ["x"] = 20,
-    ["y"] = 21,
-    ["z"] = 22
+    ["return"] = C.ImGuiKey_Enter,
+    ["escape"] = C.ImGuiKey_Escape,
+    ["backspace"] = C.ImGuiKey_Backspace,
+    ["tab"] = C.ImGuiKey_Tab,
+    ["space"] = C.ImGuiKey_Space,
+    [","] = C.ImGuiKey_Comma,
+    ["-"] = C.ImGuiKey_Minus,
+    ["."] = C.ImGuiKey_Period,
+    ["/"] = C.ImGuiKey_Slash,
+
+    ["0"] = C.ImGuiKey_0,
+    ["1"] = C.ImGuiKey_1,
+    ["2"] = C.ImGuiKey_2,
+    ["3"] = C.ImGuiKey_3,
+    ["4"] = C.ImGuiKey_4,
+    ["5"] = C.ImGuiKey_5,
+    ["6"] = C.ImGuiKey_6,
+    ["7"] = C.ImGuiKey_7,
+    ["8"] = C.ImGuiKey_8,
+    ["9"] = C.ImGuiKey_9,
+
+    [";"] = C.ImGuiKey_Semicolon,
+    ["="] = C.ImGuiKey_Equal,
+
+    ["["] = C.ImGuiKey_LeftBracket,
+    ["\\"] = C.ImGuiKey_Backslash,
+    ["]"] = C.ImGuiKey_RightBracket,
+    ["`"] = C.ImGuiKey_GraveAccent,
+
+    ["a"] = C.ImGuiKey_A,
+    ["b"] = C.ImGuiKey_B,
+    ["c"] = C.ImGuiKey_C,
+    ["d"] = C.ImGuiKey_D,
+    ["e"] = C.ImGuiKey_E,
+    ["f"] = C.ImGuiKey_F,
+    ["g"] = C.ImGuiKey_G,
+    ["h"] = C.ImGuiKey_H,
+    ["i"] = C.ImGuiKey_I,
+    ["j"] = C.ImGuiKey_J,
+    ["k"] = C.ImGuiKey_K,
+    ["l"] = C.ImGuiKey_L,
+    ["m"] = C.ImGuiKey_M,
+    ["n"] = C.ImGuiKey_N,
+    ["o"] = C.ImGuiKey_O,
+    ["p"] = C.ImGuiKey_P,
+    ["q"] = C.ImGuiKey_Q,
+    ["r"] = C.ImGuiKey_R,
+    ["s"] = C.ImGuiKey_S,
+    ["t"] = C.ImGuiKey_T,
+    ["u"] = C.ImGuiKey_U,
+    ["v"] = C.ImGuiKey_V,
+    ["w"] = C.ImGuiKey_W,
+    ["x"] = C.ImGuiKey_X,
+    ["y"] = C.ImGuiKey_Y,
+    ["z"] = C.ImGuiKey_Z,
+
+    ["capslock"] = C.ImGuiKey_CapsLock,
+
+    ["f1"] = C.ImGuiKey_F1,
+    ["f2"] = C.ImGuiKey_F2,
+    ["f3"] = C.ImGuiKey_F3,
+    ["f4"] = C.ImGuiKey_F4,
+    ["f5"] = C.ImGuiKey_F5,
+    ["f6"] = C.ImGuiKey_F6,
+    ["f7"] = C.ImGuiKey_F7,
+    ["f8"] = C.ImGuiKey_F8,
+    ["f9"] = C.ImGuiKey_F9,
+    ["f10"] = C.ImGuiKey_F10,
+    ["f11"] = C.ImGuiKey_F11,
+    ["f12"] = C.ImGuiKey_F12,
+
+    ["printscreen"] = C.ImGuiKey_PrintScreen,
+    ["scrolllock"] = C.ImGuiKey_ScrollLock,
+    ["pause"] = C.ImGuiKey_Pause,
+    ["insert"] = C.ImGuiKey_Insert,
+    ["home"] = C.ImGuiKey_Home,
+    ["pageup"] = C.ImGuiKey_PageUp,
+    ["delete"] = C.ImGuiKey_Delete,
+    ["end"] = C.ImGuiKey_End,
+    ["pagedown"] = C.ImGuiKey_PageDown,
+    ["right"] = C.ImGuiKey_RightArrow,
+    ["left"] = C.ImGuiKey_LeftArrow,
+    ["down"] = C.ImGuiKey_DownArrow,
+    ["up"] = C.ImGuiKey_UpArrow,
+
+    ["numlock"] = C.ImGuiKey_NumLock,
+    ["kp/"] = C.ImGuiKey_KeypadDivide,
+    ["kp*"] = C.ImGuiKey_KeypadMultiply,
+    ["kp-"] = C.ImGuiKey_KeypadSubtract,
+    ["kp+"] = C.ImGuiKey_KeypadAdd,
+    ["kpenter"] = C.ImGuiKey_KeypadEnter,
+    ["kp0"] = C.ImGuiKey_Keypad0,
+    ["kp1"] = C.ImGuiKey_Keypad1,
+    ["kp2"] = C.ImGuiKey_Keypad2,
+    ["kp3"] = C.ImGuiKey_Keypad3,
+    ["kp4"] = C.ImGuiKey_Keypad4,
+    ["kp5"] = C.ImGuiKey_Keypad5,
+    ["kp6"] = C.ImGuiKey_Keypad6,
+    ["kp7"] = C.ImGuiKey_Keypad7,
+    ["kp8"] = C.ImGuiKey_Keypad8,
+    ["kp9"] = C.ImGuiKey_Keypad9,
+    ["kp."] = C.ImGuiKey_KeypadDecimal,
+    ["kp="] = C.ImGuiKey_KeypadEqual,
+
+    ["menu"] = C.ImGuiKey_Menu,
+
+    ["lctrl"] = {C.ImGuiKey_LeftCtrl, C.ImGuiMod_Ctrl},
+    ["lshift"] = {C.ImGuiKey_LeftShift, C.ImGuiMod_Shift},
+    ["lalt"] = {C.ImGuiKey_LeftAlt, C.ImGuiMod_Alt},
+    ["lgui"] = {C.ImGuiKey_LeftSuper, C.ImGuiMod_Super},
+    ["rctrl"] = {C.ImGuiKey_RightCtrl, C.ImGuiMod_Ctrl},
+    ["rshift"] = {C.ImGuiKey_RightShift, C.ImGuiMod_Shift},
+    ["ralt"] = {C.ImGuiKey_RightAlt, C.ImGuiMod_Alt},
+    ["rgui"] = {C.ImGuiKey_RightSuper, C.ImGuiMod_Super},
 }
+_common.lovekeymap = lovekeymap
 
-local ini_filename, textureObject
+local textureObject, textureShader
+local strings = {}
 
-M._textures = setmetatable({},{__mode="v"})
+_common.textures = setmetatable({},{__mode="v"})
+_common.callbacks = setmetatable({},{__mode="v"})
 
-function M.Init()
+local cliboard_callback_get, cliboard_callback_set
+local io
+
+local Alpha8_shader
+
+function L.Init(format)
+    Alpha8_shader = love.graphics.newShader [[
+        vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords) {
+            float alpha = Texel(tex, texture_coords).r;
+            return vec4(color.rgb, color.a*alpha);
+        }
+    ]]
+
+    format = format or "RGBA32"
     C.igCreateContext(nil)
-    M.BuildFontAtlas()
+    io = C.igGetIO()
+    L.BuildFontAtlas(format)
 
-    local io = C.igGetIO()
-    local kmap = io.KeyMap
-
-    kmap[C.ImGuiKey_Tab] = lovekeymap["tab"]
-    kmap[C.ImGuiKey_LeftArrow] = lovekeymap["left"]
-    kmap[C.ImGuiKey_RightArrow] = lovekeymap["right"]
-    kmap[C.ImGuiKey_UpArrow] = lovekeymap["up"]
-    kmap[C.ImGuiKey_DownArrow] = lovekeymap["down"]
-    kmap[C.ImGuiKey_PageUp] = lovekeymap["pageup"]
-    kmap[C.ImGuiKey_PageDown] = lovekeymap["pagedown"]
-    kmap[C.ImGuiKey_Home] = lovekeymap["home"]
-    kmap[C.ImGuiKey_End] = lovekeymap["end"]
-    kmap[C.ImGuiKey_Insert] = lovekeymap["insert"]
-    kmap[C.ImGuiKey_Delete] = lovekeymap["delete"]
-    kmap[C.ImGuiKey_Backspace] = lovekeymap["backspace"]
-    kmap[C.ImGuiKey_Space] = lovekeymap["space"]
-    kmap[C.ImGuiKey_Enter] = lovekeymap["return"]
-    kmap[C.ImGuiKey_Escape] = lovekeymap["escape"]
-    kmap[C.ImGuiKey_KeyPadEnter] = lovekeymap["kpenter"]
-    kmap[C.ImGuiKey_A] = lovekeymap["a"]
-    kmap[C.ImGuiKey_C] = lovekeymap["c"]
-    kmap[C.ImGuiKey_V] = lovekeymap["v"]
-    kmap[C.ImGuiKey_X] = lovekeymap["x"]
-    kmap[C.ImGuiKey_Y] = lovekeymap["y"]
-    kmap[C.ImGuiKey_Z] = lovekeymap["z"]
-
-    io.GetClipboardTextFn = function(userdata)
+    cliboard_callback_get = ffi.cast("const char* (*)(void*)", function(userdata)
         return love.system.getClipboardText()
-    end
-    io.SetClipboardTextFn = function(userdata, text)
+    end)
+    cliboard_callback_set = ffi.cast("void (*)(void*, const char*)", function(userdata, text)
         love.system.setClipboardText(ffi.string(text))
-    end
+    end)
+
+    io.GetClipboardTextFn = cliboard_callback_get
+    io.SetClipboardTextFn = cliboard_callback_set
 
     local dpiscale = love.window.getDPIScale()
-    io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.x = dpiscale, dpiscale
+    io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y = dpiscale, dpiscale
 
     love.filesystem.createDirectory("/")
-    ini_filename = love.filesystem.getSaveDirectory() .. "/imgui.ini"
-    io.IniFilename = ini_filename
+    strings.ini_filename = love.filesystem.getSaveDirectory() .. "/imgui.ini"
+    io.IniFilename = strings.ini_filename
+
+    strings.impl_name = "cimgui-love"
+    io.BackendPlatformName = strings.impl_name
+    io.BackendRendererName = strings.impl_name
+
+    io.BackendFlags = bit.bor(C.ImGuiBackendFlags_HasMouseCursors, C.ImGuiBackendFlags_HasSetMousePos)
 end
 
-function M.BuildFontAtlas()
-    local io = C.igGetIO()
+local custom_shader
+
+function L.SetShader(shader)
+    custom_shader = shader
+end
+
+function L.BuildFontAtlas(format)
+    format = format or "RGBA32"
     local pixels, width, height = ffi.new("unsigned char*[1]"), ffi.new("int[1]"), ffi.new("int[1]")
-    C.ImFontAtlas_GetTexDataAsRGBA32(io.Fonts, pixels, width, height, nil)
-    local imgdata = love.image.newImageData(width[0], height[0], "rgba8", ffi.string(pixels[0], width[0]*height[0]*4))
+    local imgdata
+
+    if format == "RGBA32" then
+        C.ImFontAtlas_GetTexDataAsRGBA32(io.Fonts, pixels, width, height, nil)
+        imgdata = love.image.newImageData(width[0], height[0], "rgba8", ffi.string(pixels[0], width[0]*height[0]*4))
+        textureShader = nil
+    elseif format == "Alpha8" then
+        C.ImFontAtlas_GetTexDataAsAlpha8(io.Fonts, pixels, width, height, nil)
+        imgdata = love.image.newImageData(width[0], height[0], "r8", ffi.string(pixels[0], width[0]*height[0]))
+        textureShader = Alpha8_shader
+    else
+        error([[Format should be either "RGBA32" or "Alpha8".]], 2)
+    end
+
     textureObject = love.graphics.newImage(imgdata)
 end
 
-function M.Update(dt)
-    local io = C.igGetIO()
+function L.Update(dt)
     io.DisplaySize.x, io.DisplaySize.y = love.graphics.getDimensions()
     io.DeltaTime = dt
 
-    -- Hide OS mouse cursor if ImGui is drawing it
-    love.mouse.setVisible(not io.MouseDrawCursor)
+    if io.WantSetMousePos then
+        love.mouse.setPosition(io.MousePos.x, io.MousePos.y)
+    end
 end
 
 local function love_texture_test(t)
     return t:typeOf("Texture")
 end
 
-function M.RenderDrawLists()
-    local io = C.igGetIO()
+local cursors = {
+    [C.ImGuiMouseCursor_Arrow] = love.mouse.getSystemCursor("arrow"),
+    [C.ImGuiMouseCursor_TextInput] = love.mouse.getSystemCursor("ibeam"),
+    [C.ImGuiMouseCursor_ResizeAll] = love.mouse.getSystemCursor("sizeall"),
+    [C.ImGuiMouseCursor_ResizeNS] = love.mouse.getSystemCursor("sizens"),
+    [C.ImGuiMouseCursor_ResizeEW] = love.mouse.getSystemCursor("sizewe"),
+    [C.ImGuiMouseCursor_ResizeNESW] = love.mouse.getSystemCursor("sizenesw"),
+    [C.ImGuiMouseCursor_ResizeNWSE] = love.mouse.getSystemCursor("sizenwse"),
+    [C.ImGuiMouseCursor_Hand] = love.mouse.getSystemCursor("hand"),
+    [C.ImGuiMouseCursor_NotAllowed] = love.mouse.getSystemCursor("no"),
+}
+
+local mesh, meshdata
+local max_vertexcount = -math.huge
+
+function L.RenderDrawLists()
+    -- Avoid rendering when minimized
+    if io.DisplaySize.x == 0 or io.DisplaySize.y == 0 or not love.window.isVisible() then return end
+
+    love.graphics.push("all")
+
+    _common.RunShortcuts()
     local data = C.igGetDrawData()
 
-    -- Avoid rendering when minimized, scale coordinates for retina displays
-    -- (screen coordinates != framebuffer coordinates)
-    if io.DisplaySize.x == 0 or io.DisplaySize.y == 0 then return end
-    C.ImDrawData_ScaleClipRects(data, io.DisplayFramebufferScale)
+    -- change mouse cursor
+    if bit.band(io.ConfigFlags, C.ImGuiConfigFlags_NoMouseCursorChange) ~= C.ImGuiConfigFlags_NoMouseCursorChange then
+        local cursor = cursors[C.igGetMouseCursor()]
+        if io.MouseDrawCursor or not cursor then
+            love.mouse.setVisible(false) -- Hide OS mouse cursor if ImGui is drawing it
+        else
+            love.mouse.setVisible(true)
+            love.mouse.setCursor(cursor)
+        end
+    end
 
     for i = 0, data.CmdListsCount - 1 do
         local cmd_list = data.CmdLists[i]
-        local VtxSize = cmd_list.VtxBuffer.Size*ffi.sizeof("ImDrawVert")
-        local VtxData = ffi.string(ffi.cast("unsigned char*", cmd_list.VtxBuffer.Data), VtxSize)
-        local meshdata = love.image.newImageData(VtxSize/4, 1, "rgba8", VtxData)
-        local mesh = love.graphics.newMesh(vertexformat, meshdata, "triangles")
+
+        local vertexcount = cmd_list.VtxBuffer.Size
+        local data_size = vertexcount*ffi.sizeof("ImDrawVert")
+        if vertexcount > max_vertexcount then
+            max_vertexcount = vertexcount
+            if mesh then mesh:release() end
+            if meshdata then meshdata:release() end
+            meshdata = love.data.newByteData(math.max(data_size, ffi.sizeof("ImDrawVert")))
+            ffi.copy(meshdata:getFFIPointer(), cmd_list.VtxBuffer.Data, data_size)
+            mesh = love.graphics.newMesh(vertexformat, meshdata, "triangles", "static")
+        else
+            ffi.copy(meshdata:getFFIPointer(), cmd_list.VtxBuffer.Data, data_size)
+            mesh:setVertices(meshdata)
+        end
 
         local IdxBuffer = {}
         for k = 1, cmd_list.IdxBuffer.Size do
@@ -129,120 +279,176 @@ function M.RenderDrawLists()
         end
         mesh:setVertexMap(IdxBuffer)
 
-        local position = 1
         for k = 0, cmd_list.CmdBuffer.Size - 1 do
             local cmd = cmd_list.CmdBuffer.Data[k]
-            local clipX, clipY = cmd.ClipRect.x, cmd.ClipRect.y
-            local clipW = cmd.ClipRect.z - clipX
-            local clipH = cmd.ClipRect.w - clipY
+            if cmd.UserCallback ~= nil then
+                local callback = _common.callbacks[ffi.string(ffi.cast("void*", cmd.UserCallback))] or cmd.UserCallback
+                callback(cmd_list, cmd)
+            elseif cmd.ElemCount > 0 then
+                local clipX, clipY = cmd.ClipRect.x, cmd.ClipRect.y
+                local clipW = cmd.ClipRect.z - clipX
+                local clipH = cmd.ClipRect.w - clipY
 
-            love.graphics.setBlendMode("alpha")
+                love.graphics.setBlendMode("alpha", "alphamultiply")
 
-            local texture_id = cmd.TextureId
-            if texture_id ~= nil then
-                local obj = M._textures[tostring(texture_id)]
-                local status, value = pcall(love_texture_test, obj)
-                assert(status and value, "Only LÖVE Texture objects can be passed as ImTextureID arguments.")
-                if obj:typeOf("Canvas") then
-					love.graphics.setBlendMode("alpha", "premultiplied")
+                local texture_id = C.ImDrawCmd_GetTexID(cmd)
+                if texture_id ~= nil then
+                    local obj = _common.textures[tostring(texture_id)]
+                    local status, value = pcall(love_texture_test, obj)
+                    assert(status and value, "Only LÖVE Texture objects can be passed as ImTextureID arguments.")
+                    if obj:typeOf("Canvas") then
+                        love.graphics.setBlendMode("alpha", "premultiplied")
+                    end
+                    love.graphics.setShader()
+                    mesh:setTexture(obj)
+                else
+                    love.graphics.setShader(custom_shader or textureShader)
+                    mesh:setTexture(textureObject)
                 end
-                mesh:setTexture(obj)
-            else
-                mesh:setTexture(textureObject)
-            end
 
-            love.graphics.setScissor(clipX, clipY, clipW, clipH)
-            mesh:setDrawRange(position, cmd.ElemCount)
-            love.graphics.draw(mesh)
-            position = position + cmd.ElemCount
-            love.graphics.setBlendMode("alpha")
+                love.graphics.setScissor(clipX, clipY, clipW, clipH)
+                mesh:setDrawRange(cmd.IdxOffset + 1, cmd.ElemCount)
+                love.graphics.draw(mesh)
+            end
         end
     end
-    love.graphics.setScissor()
+    love.graphics.pop()
 end
 
-function M.MouseMoved(x, y)
-    local io = C.igGetIO()
+function L.MouseMoved(x, y)
     if love.window.hasMouseFocus() then
-        io.MousePos.x, io.MousePos.y = x, y
+        io:AddMousePosEvent(x, y)
     end
 end
 
 local mouse_buttons = {true, true, true}
 
-function M.MousePressed(button)
+function L.MousePressed(button)
     if mouse_buttons[button] then
-        C.igGetIO().MouseDown[button - 1] = true
+        io:AddMouseButtonEvent(button - 1, true)
     end
 end
 
-function M.MouseReleased(button)
+function L.MouseReleased(button)
     if mouse_buttons[button] then
-        C.igGetIO().MouseDown[button - 1] = false
+        io:AddMouseButtonEvent(button - 1, false)
     end
 end
 
-function M.WheelMoved(x, y)
-    local io = C.igGetIO()
-    io.MouseWheelH = x
-    io.MouseWheel = y
+function L.WheelMoved(x, y)
+    io:AddMouseWheelEvent(x, y)
 end
 
-function M.KeyPressed(key)
-    local io = C.igGetIO()
-    if lovekeymap[key] then
-        io.KeysDown[lovekeymap[key]] = true
-    elseif key == "rshift" or key == "lshift" then
-        io.KeyShift = true
-    elseif key == "rctrl" or key == "lctrl" then
-        io.KeyCtrl = true
-    elseif key == "ralt" or key == "lalt" then
-        io.KeyAlt = true
-    elseif key == "rgui" or key == "lgui" then
-        io.KeySuper = true
+function L.KeyPressed(key)
+    local t = lovekeymap[key]
+    if type(t) == "table" then
+        io:AddKeyEvent(t[1], true)
+        io:AddKeyEvent(t[2], true)
+    else
+        io:AddKeyEvent(t or C.ImGuiKey_None, true)
     end
 end
 
-function M.KeyReleased(key)
-    local io = C.igGetIO()
-    if lovekeymap[key] then
-        io.KeysDown[lovekeymap[key]] = false
-    elseif key == "rshift" or key == "lshift" then
-        io.KeyShift = false
-    elseif key == "rctrl" or key == "lctrl" then
-        io.KeyCtrl = false
-    elseif key == "ralt" or key == "lalt" then
-        io.KeyAlt = false
-    elseif key == "rgui" or key == "lgui" then
-        io.KeySuper = false
+function L.KeyReleased(key)
+    local t = lovekeymap[key]
+    if type(t) == "table" then
+        io:AddKeyEvent(t[1], false)
+        io:AddKeyEvent(t[2], false)
+    else
+        io:AddKeyEvent(t or C.ImGuiKey_None, false)
     end
 end
 
-function M.TextInput(text)
-    C.ImGuiIO_AddInputCharactersUTF8(C.igGetIO(), text)
+function L.TextInput(text)
+    C.ImGuiIO_AddInputCharactersUTF8(io, text)
 end
 
-function M.Shutdown()
+function L.Shutdown()
     C.igDestroyContext(nil)
+    io = nil
+    cliboard_callback_get:free()
+    cliboard_callback_set:free()
+    cliboard_callback_get, cliboard_callback_set = nil
+end
+
+function L.JoystickAdded(joystick)
+    if not joystick:isGamepad() then return end
+    io.BackendFlags = bit.bor(io.BackendFlags, C.ImGuiBackendFlags_HasGamepad)
+end
+
+function L.JoystickRemoved()
+    for _, joystick in ipairs(love.joystick.getJoysticks()) do
+        if joystick:isGamepad() then return end
+    end
+    io.BackendFlags = bit.band(io.BackendFlags, bit.bnot(C.ImGuiBackendFlags_HasGamepad))
+end
+
+local gamepad_map = {
+    start = C.ImGuiKey_GamepadStart,
+    back = C.ImGuiKey_GamepadBack,
+    a = C.ImGuiKey_GamepadFaceDown,
+    b = C.ImGuiKey_GamepadFaceRight,
+    y = C.ImGuiKey_GamepadFaceUp,
+    x = C.ImGuiKey_GamepadFaceLeft,
+    dpleft = C.ImGuiKey_GamepadDpadLeft,
+    dpright = C.ImGuiKey_GamepadDpadRight,
+    dpup = C.ImGuiKey_GamepadDpadUp,
+    dpdown = C.ImGuiKey_GamepadDpadDown,
+    leftshoulder = C.ImGuiKey_GamepadL1,
+    rightshoulder = C.ImGuiKey_GamepadR1,
+    leftstick = C.ImGuiKey_GamepadL3,
+    rightstick = C.ImGuiKey_GamepadR3,
+    --analog
+    triggerleft = C.ImGuiKey_GamepadL2,
+    triggerright = C.ImGuiKey_GamepadR2,
+    leftx = {C.ImGuiKey_GamepadLStickLeft, C.ImGuiKey_GamepadLStickRight},
+    lefty = {C.ImGuiKey_GamepadLStickUp, C.ImGuiKey_GamepadLStickDown},
+    rightx = {C.ImGuiKey_GamepadRStickLeft, C.ImGuiKey_GamepadRStickRight},
+    righty = {C.ImGuiKey_GamepadRStickUp, C.ImGuiKey_GamepadRStickDown},
+}
+
+function L.GamepadPressed(button)
+    io:AddKeyEvent(gamepad_map[button] or C.ImGuiKey_None, true)
+end
+
+function L.GamepadReleased(button)
+    io:AddKeyEvent(gamepad_map[button] or C.ImGuiKey_None, false)
+end
+
+function L.GamepadAxis(axis, value, threshold)
+    threshold = threshold or 0
+    local imguikey = gamepad_map[axis]
+    if type(imguikey) == "table" then
+        if value > threshold then
+            io:AddKeyAnalogEvent(imguikey[2], true, value)
+            io:AddKeyAnalogEvent(imguikey[1], false, 0)
+        elseif value < -threshold then
+            io:AddKeyAnalogEvent(imguikey[1], true, -value)
+            io:AddKeyAnalogEvent(imguikey[2], false, 0)
+        else
+           io:AddKeyAnalogEvent(imguikey[1], false, 0)
+           io:AddKeyAnalogEvent(imguikey[2], false, 0)
+        end
+    elseif imguikey then
+        io:AddKeyAnalogEvent(imguikey, value ~= 0, value)
+    end
 end
 
 -- input capture
 
-function M.GetWantCaptureMouse()
-    return C.igGetIO().WantCaptureMouse
+function L.GetWantCaptureMouse()
+    return io.WantCaptureMouse
 end
 
-function M.GetWantCaptureKeyboard()
-    return C.igGetIO().WantCaptureKeyboard
+function L.GetWantCaptureKeyboard()
+    return io.WantCaptureKeyboard
 end
 
-function M.GetWantTextInput()
-    return C.igGetIO().WantTextInput
+function L.GetWantTextInput()
+    return io.WantTextInput
 end
 
 -- flag helpers
-
-local bit = require("bit")
 local flags = {}
 
 for name in pairs(M) do
@@ -255,7 +461,7 @@ end
 for name in pairs(flags) do
     local shortname = name:gsub("^ImGui", "")
     shortname = shortname:gsub("^Im", "")
-    M[shortname] = function(...)
+    L[shortname] = function(...)
         local t = {}
         for _, flag in ipairs({...}) do
             t[#t + 1] = M[name .. "_" .. flag]
@@ -263,3 +469,18 @@ for name in pairs(flags) do
         return bit.bor(unpack(t))
     end
 end
+
+-- revert to old implementation names, i.e., imgui.RenderDrawLists instead of imgui.love.RenderDrawLists, etc.
+local old_names = {}
+
+for k, v in pairs(L) do
+    old_names[k] = v
+end
+
+function L.RevertToOldNames()
+    for k, v in pairs(old_names) do
+        M[k] = v
+    end
+end
+
+
