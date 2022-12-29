@@ -66,13 +66,13 @@ function M.this_script_path()
 end
 local pathut = M
 
-function loader(ig)
+function loader()
     -----------------------YesNo dialog ---------------
 local gui = {}
 function gui.YesNo(msg)
     local D = {}
     function D.open() 
-        ig.OpenPopup("yesno") 
+        ig.OpenPopup("yesno")
     end
     function D.draw(doit)
         local resp = doit
