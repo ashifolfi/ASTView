@@ -7,8 +7,6 @@ local ffi = require "ffi"
 -- https://github.com/sonoro1234/luafilesystem
 local lfs = require"libs.lfs_ffi"
 
-local ig = require "cimgui"
-
    --------------path utilities extracted from penligth (Steve Donovan)
 local M = {}
 local is_windows = package.config:sub(1,1) == '\\'
@@ -66,7 +64,7 @@ function M.this_script_path()
 end
 local pathut = M
 
-function loader()
+function loader(ig)
     -----------------------YesNo dialog ---------------
 local gui = {}
 function gui.YesNo(msg)
@@ -223,7 +221,7 @@ function gui.FileBrowser(filename_p, args, funcOK)
     
         end
     end
-    return {draw = filechooser, open = function() curr_dir_done = false;ig.OpenPopup(args.key) end,func = funcOK}
+    return {draw = filechooser, open = function() curr_dir_done = false;ig.OpenPopup_Str(args.key) end,func = funcOK}
 end
 
 return gui

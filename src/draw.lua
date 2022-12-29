@@ -2,7 +2,7 @@ local ffi = require "ffi"
 local imgui = require "cimgui"
 
 require "fileview"
-local fbg = require "libs.filebrowser"()
+local fbg = require "libs.filebrowser"(imgui)
 
 local show = ffi.new("bool[1]", true)
 local show_about = ffi.new("bool[1]", false)
